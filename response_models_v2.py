@@ -1,4 +1,4 @@
-from pydantic import BaseModel, NonNegativeFloat, constr, conlist, confloat, condecimal
+from pydantic import BaseModel, Field, constr
 from typing import Union, List, Dict
 from enum import Enum
 
@@ -12,126 +12,62 @@ class Colors(str, Enum):
     pink = "pink"
 
 
-class ItemPoint(BaseModel):
-    x: confloat(strict=False, gt=-1.0, le=1.0)
-    y: confloat(strict=False, gt=-1.0, le=1.0)
-    name: Union[str, None] = None
+class SuccessfulResponse(BaseModel):
+    message: str = Field(default='Example success response', min_length=10, max_length=30)
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "name": "P",
-                "x": 0.5,
-                "y": 0.1,
-            }
-        }
+
+class ItemPoint(BaseModel):
+    x: float = Field(ge=-1.0, le=1.0, description='1\'st coordinate of the point', default=0.5)
+    y: float = Field(ge=-1.0, le=1.0, description='2\'nd coordinate of the point', default=0.1)
+    name: Union[str, None] = Field(max_length=4, description='point name', default='P')
 
 
 class ItemColoredPoint(BaseModel):
 
-    x: confloat(strict=False, gt=-1.0, le=1.0)
-    y: confloat(strict=False, gt=-1.0, le=1.0)
-    name: Union[str, None] = None
-    color: Colors
-    size: int
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "name": "P",
-                "x": 0.5,
-                "y": 0.1,
-                'color': 'black',
-                'size': 10
-            }
-        }
+    x: float = Field(ge=-1.0, le=1.0, description='1\'st coordinate of the point', default=0.5)
+    y: float = Field(ge=-1.0, le=1.0, description='2\'nd coordinate of the point', default=0.1)
+    name: Union[str, None] = Field(max_length=4, description='point name', default='P')
+    color: Colors = Field(default='black', description='point color', exclude=True)
+    size: int = Field(default=10, description='point size', exclude=True)
 
 
 class ItemLine(BaseModel):
-    starting_point: ItemPoint
-    ending_point: ItemPoint
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "starting_point": {"name": 'A', 'x': 0.2, 'y': 0.2},
-                "ending_point": {"name": 'B', 'x': 0.3, 'y': 0.5}
-            }
-        }
+    starting_point: ItemPoint = Field(default={"name": "A", "x": 0.2, "y": 0.2}, description='line starting point')
+    ending_point: ItemPoint = Field(default={"name": "B", "x": 0.3, "y": 0.5}, description='line ending point')
 
 
 class ItemCircle(BaseModel):
-    center: ItemPoint
-    radius: confloat(gt=0, le=1.0)
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "center": {"name": '0', 'x': 0.5, 'y': 0.5},
-                "radius": 0.25
-            }
-        }
+    center: ItemPoint = Field(default={"name": "O", "x": 0.2, "y": 0.2}, description='center point of the circle')
+    radius: float = Field(default=0.3, gt=0, lt=0.5, description="Circle radius, must be greater than zero")
 
 
 class ItemTriangle(BaseModel):
-    a: ItemPoint
-    b: ItemPoint
-    c: ItemPoint
+    a: ItemPoint = Field(default={"name": 'A', 'x': 0.0, 'y': 0.0}, description='1\'st point of the triangle')
+    b: ItemPoint = Field(default={"name": 'B', 'x': 0.5, 'y': 0.5}, description='2\'nd point of the triangle')
+    c: ItemPoint = Field(default={"name": 'C', 'x': 1.0, 'y': 0.0}, description='3\'rd point of the triangle')
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "a": {"name": 'A', 'x': 0.0, 'y': 0.0},
-                "b": {"name": 'B', 'x': 0.5, 'y': 0.5},
-                "c": {"name": 'C', 'x': 1.0, 'y': 0.0}
-            }
-        }
+
+example_vertices = [{"name": "A", "x": 0.0, "y": 0.0},
+                    {"name": "B", "x": 0.0, "y": 0.2},
+                    {"name": "C", "x": 0.5, "y": 0.0},
+                    {"name": "D", "x": 0.5, "y": 0.2}
+                    ]
 
 
 class ItemPolygon(BaseModel):
-    name: Union[str, None] = None
-    vertices: conlist(ItemPoint, min_items=3, max_items=7, unique_items=True)
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "name": "my_poly",
-                "vertices": [
-                {
-                    "name": "A",
-                    "x": 0.5,
-                    "y": 0.3
-                },
-                {
-                    "name": "B",
-                    "x": 0.5,
-                    "y": 0.8
-                },
-                {
-                    "name": "C",
-                    "x": 0.8,
-                    "y": 0.8
-                },
-                {
-                    "name": "D",
-                    "x": 0.8,
-                    "y": 0.3
-                }
-                ]
-            }
-        }
-
-
-class SuccessfulResponse(BaseModel):
-    message: constr(min_length=2, max_length=30) = 'Example success response'
+    name: Union[str, None] = Field(default=None, description='polygon name', max_length=10)
+    vertices: List[ItemPoint] = Field(default=example_vertices, min_items=3, max_items=7, unique_items=True)
 
 
 class AreaResponse(BaseModel):
-    figure: str = "poly"
-    area: condecimal(gt=0) = 12.0
+    figure: str = Field(default='poly', description='figure name')
+    area: float = Field(gt=0, default=12.0, description='figure area')
+    time: Union[None, float] = Field(ge=0, default=None, description='time in seconds taken to calculate area')
+    #area: Decimal = Field(gt=0, decimal_places=2, max_digits=2, description='figure area')
 
 
 class LineInfoResponse(BaseModel):
-    length: float = 3.1623
-    slope: confloat(strict=True, allow_inf_nan=True) = 0.3334
-    intercept: confloat(strict=True, allow_inf_nan=True) = 0
+    length: float = Field(default=3.16, description='line length')
+    slope: float = Field(default=0.3334, description='line slope')
+    intercept: float = Field(default=0, description='line intercept')
+
