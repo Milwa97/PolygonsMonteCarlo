@@ -1,6 +1,6 @@
 from typing import Union
 from enum import Enum
-from pydantic import BaseModel, constr, conlist, confloat, condecimal
+from pydantic import BaseModel, constr, conlist, confloat
 
 
 class Colors(str, Enum):
